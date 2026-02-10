@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YT→Carousel | Transforma videos de YouTube en carruseles de Instagram</title>
+  <meta name="description" content="Convierte tus videos de YouTube en carruseles profesionales de Instagram con IA. Extrae conceptos clave y genera slides en segundos.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay hidden">
+    <div class="loading-content">
+      <div class="loading-spinner">
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+        <div class="spinner-ring"></div>
+      </div>
+      <p class="loading-text" id="loading-text">Procesando...</p>
+      <p class="loading-sub" id="loading-sub">Esto puede tomar unos segundos</p>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">
+      <span class="logo-icon">📺</span>
+      <span class="logo-text">YT<span class="logo-arrow">→</span><span class="logo-highlight">Carousel</span></span>
+    </div>
+    <p class="tagline">Transforma videos de YouTube en carruseles de Instagram</p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Step 1: URL Input -->
+    <section class="card" id="input-section">
+      <h2 class="card-title">Pega tu URL de YouTube</h2>
+      <div class="input-row">
+        <div class="input-wrapper">
+          <span class="input-icon">🔗</span>
+          <input
+            type="url"
+            id="url-input"
+            placeholder="https://youtube.com/watch?v=..."
+            autocomplete="off"
+          >
+          <button class="input-clear hidden" id="clear-btn" title="Limpiar">✕</button>
+        </div>
+        <button class="btn btn-primary" id="generate-btn">
+          Generar Carrusel <span class="btn-sparkle">✨</span>
+        </button>
+      </div>
+
+      <!-- Manual transcript toggle -->
+      <div class="manual-toggle">
+        <label class="checkbox-wrapper">
+          <input type="checkbox" id="manual-check">
+          <span class="checkmark"></span>
+          <span>📝 O pega la transcripción manualmente</span>
+        </label>
+      </div>
+      <div class="manual-input hidden" id="manual-input-section">
+        <textarea
+          id="manual-transcript"
+          placeholder="Pega aquí la transcripción del video..."
+          rows="6"
+        ></textarea>
+      </div>
+
+      <!-- Slide count + Demo -->
+      <div class="options-row">
+        <div class="select-group">
+          <label>Diapositivas:</label>
+          <div class="custom-select">
+            <select id="slide-count">
+              <option value="5">5 diapositivas</option>
+              <option value="7" selected>7 diapositivas</option>
+              <option value="10">10 diapositivas</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-outline" id="demo-btn">
+          <span>🚀</span> Ver Demo
+        </button>
+      </div>
+    </section>
+
+    <!-- Video Title -->
+    <div class="video-title hidden" id="video-title-section">
+      <span class="video-title-icon">📺</span>
+      <span id="video-title-text"></span>
+    </div>
+
+    <!-- Step 2: Transcript Editor -->
+    <section class="card hidden" id="transcript-section">
+      <div class="card-header">
+        <h2 class="card-title">📝 Editar Transcripción</h2>
+        <div class="transcript-stats">
+          <span id="char-count">0 caracteres</span>
+          <span class="stat-divider">|</span>
+          <span id="word-count">0 palabras</span>
+        </div>
+      </div>
+      <p class="card-desc">Revisa y edita la transcripción antes de generar el carrusel. Puedes corregir errores o eliminar partes irrelevantes.</p>
+      <textarea id="transcript-editor" rows="10" placeholder="La transcripción aparecerá aquí..."></textarea>
+      <div class="transcript-actions">
+        <button class="btn btn-secondary" id="back-to-input-btn">← Volver</button>
+        <button class="btn btn-primary" id="confirm-transcript-btn">
+          Generar con esta transcripción ✨
+        </button>
+      </div>
+    </section>
+
+    <!-- Step 3: Carousel Preview -->
+    <section class="card hidden" id="carousel-section">
+      <div class="card-header">
+        <h2 class="card-title">🎨 Tu Carrusel</h2>
+        <button class="btn btn-download" id="download-btn">
+          Descargar Todo <span>📦</span>
+        </button>
+      </div>
+
+      <div class="carousel-container">
+        <button class="carousel-arrow left" id="prev-btn">‹</button>
+        <div class="carousel-viewport">
+          <div class="carousel-track" id="carousel-track"></div>
+        </div>
+        <button class="carousel-arrow right" id="next-btn">›</button>
+      </div>
+
+      <div class="carousel-dots" id="carousel-dots"></div>
+
+      <button class="btn btn-toggle" id="toggle-images-btn">
+        <span>🖼️</span> Alternar Vista Previa/Imágenes
+      </button>
+      <p class="toggle-hint">Haz clic para crear imágenes profesionales de diapositivas</p>
+    </section>
+
+    <!-- Step 4: Caption -->
+    <section class="card hidden" id="caption-section">
+      <div class="card-header">
+        <h2 class="card-title">📋 Texto para Instagram</h2>
+        <button class="btn btn-copy" id="copy-caption-btn">
+          Copiar <span>📋</span>
+        </button>
+      </div>
+
+      <div class="caption-content">
+        <div class="caption-block">
+          <h3 class="caption-label">DESCRIPCIÓN</h3>
+          <p id="caption-description"></p>
+        </div>
+        <div class="caption-block">
+          <h3 class="caption-label">HASHTAGS</h3>
+          <p id="caption-hashtags" class="hashtags"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>Hecho con <span class="heart">❤️</span> usando IA</p>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
