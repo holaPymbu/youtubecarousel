@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YT→Carousel | Transforma videos de YouTube en carruseles de Instagram</title>
-  <meta name="description" content="Convierte tus videos de YouTube en carruseles profesionales de Instagram con IA. Extrae conceptos clave y genera slides en segundos.">
+  <meta name="description"
+    content="Convierte tus videos de YouTube en carruseles profesionales de Instagram con IA. Extrae conceptos clave y genera slides en segundos.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
   <!-- Toast Container -->
   <div id="toast-container"></div>
@@ -29,9 +33,15 @@
 
   <!-- Header -->
   <header class="header">
-    <div class="logo">
-      <span class="logo-icon">📺</span>
-      <span class="logo-text">YT<span class="logo-arrow">→</span><span class="logo-highlight">Carousel</span></span>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">📺</span>
+        <span class="logo-text">YT<span class="logo-arrow">→</span><span class="logo-highlight">Carousel</span></span>
+      </div>
+      <button class="btn-chat-toggle" id="chat-toggle-btn" title="Soporte">
+        <span class="chat-toggle-icon">💬</span>
+        <span class="chat-toggle-dot hidden" id="chat-dot"></span>
+      </button>
     </div>
     <p class="tagline">Transforma videos de YouTube en carruseles de Instagram</p>
   </header>
@@ -44,12 +54,7 @@
       <div class="input-row">
         <div class="input-wrapper">
           <span class="input-icon">🔗</span>
-          <input
-            type="url"
-            id="url-input"
-            placeholder="https://youtube.com/watch?v=..."
-            autocomplete="off"
-          >
+          <input type="url" id="url-input" placeholder="https://youtube.com/watch?v=..." autocomplete="off">
           <button class="input-clear hidden" id="clear-btn" title="Limpiar">✕</button>
         </div>
         <button class="btn btn-primary" id="generate-btn">
@@ -66,11 +71,7 @@
         </label>
       </div>
       <div class="manual-input hidden" id="manual-input-section">
-        <textarea
-          id="manual-transcript"
-          placeholder="Pega aquí la transcripción del video..."
-          rows="6"
-        ></textarea>
+        <textarea id="manual-transcript" placeholder="Pega aquí la transcripción del video..." rows="6"></textarea>
       </div>
 
       <!-- Slide count + Demo -->
@@ -107,7 +108,8 @@
           <span id="word-count">0 palabras</span>
         </div>
       </div>
-      <p class="card-desc">Revisa y edita la transcripción antes de generar el carrusel. Puedes corregir errores o eliminar partes irrelevantes.</p>
+      <p class="card-desc">Revisa y edita la transcripción antes de generar el carrusel. Puedes corregir errores o
+        eliminar partes irrelevantes.</p>
       <textarea id="transcript-editor" rows="10" placeholder="La transcripción aparecerá aquí..."></textarea>
       <div class="transcript-actions">
         <button class="btn btn-secondary" id="back-to-input-btn">← Volver</button>
@@ -169,7 +171,35 @@
     <p>Hecho con <span class="heart">❤️</span> usando IA</p>
   </footer>
 
+  <!-- Support Chat Widget -->
+  <div class="chat-panel hidden" id="chat-panel">
+    <div class="chat-header">
+      <div class="chat-header-info">
+        <span class="chat-header-icon">🤖</span>
+        <div>
+          <div class="chat-header-title">Soporte</div>
+          <div class="chat-header-status">Online — Responderemos tus dudas</div>
+        </div>
+      </div>
+      <button class="chat-close-btn" id="chat-close-btn">✕</button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg bot">
+        <div class="chat-msg-bubble">👋 ¡Hola! Soy el asistente de soporte. ¿En qué puedo ayudarte?</div>
+      </div>
+    </div>
+    <div class="chat-typing hidden" id="chat-typing">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+      <span>Escribiendo...</span>
+    </div>
+    <form class="chat-input-form" id="chat-form">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Escribe tu pregunta..." autocomplete="off">
+      <button type="submit" class="chat-send-btn" id="chat-send-btn">➤</button>
+    </form>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="app.js"></script>
 </body>
+
 </html>

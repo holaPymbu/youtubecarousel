@@ -528,3 +528,98 @@ window.addEventListener('resize', () => {
         updateCarouselPosition();
     }
 });
+
+// ===== SUPPORT CHAT WIDGET =====
+const CHAT_WEBHOOK_URL = 'https://n8n.pymbu.com/webhook/31717b8e-f409-4e51-acc2-1e8ff14a365e/chat';
+
+const chatToggleBtn = $('#chat-toggle-btn');
+const chatPanel = $('#chat-panel');
+const chatCloseBtn = $('#chat-close-btn');
+const chatMessages = $('#chat-messages');
+const chatForm = $('#chat-form');
+const chatInput = $('#chat-input');
+const chatSendBtn = $('#chat-send-btn');
+const chatTyping = $('#chat-typing');
+
+// Generate a unique session ID for this chat session
+const chatSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
+// Toggle chat panel
+chatToggleBtn.addEventListener('click', () => {
+    const isHidden = chatPanel.classList.contains('hidden');
+    chatPanel.classList.toggle('hidden');
+    if (isHidden) {
+        chatInput.focus();
+    }
+});
+
+chatCloseBtn.addEventListener('click', () => {
+    chatPanel.classList.add('hidden');
+});
+
+// Close chat with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !chatPanel.classList.contains('hidden')) {
+        chatPanel.classList.add('hidden');
+    }
+});
+
+// Add a message to the chat
+function addChatMessage(text, sender = 'bot') {
+    const msgEl = document.createElement('div');
+    msgEl.className = `chat-msg ${sender}`;
+    msgEl.innerHTML = `<div class="chat-msg-bubble">${escapeHtml(text)}</div>`;
+    chatMessages.appendChild(msgEl);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// Send message to webhook
+async function sendChatMessage(message) {
+    chatSendBtn.disabled = true;
+    chatInput.disabled = true;
+    chatTyping.classList.remove('hidden');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    try {
+        const res = await fetch(CHAT_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'sendMessage',
+                sessionId: chatSessionId,
+                chatInput: message,
+            }),
+        });
+
+        if (!res.ok) {
+            throw new Error(`Error ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        // n8n chat webhook may return the response in different formats
+        const reply = data.output || data.text || data.message || data.response || data.reply || (typeof data === 'string' ? data : JSON.stringify(data));
+
+        addChatMessage(reply, 'bot');
+    } catch (err) {
+        console.error('Chat error:', err);
+        addChatMessage('⚠️ No pude conectar con soporte. Intenta de nuevo en unos momentos.', 'bot');
+    } finally {
+        chatTyping.classList.add('hidden');
+        chatSendBtn.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+    }
+}
+
+// Handle form submit
+chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const msg = chatInput.value.trim();
+    if (!msg) return;
+
+    addChatMessage(msg, 'user');
+    chatInput.value = '';
+    sendChatMessage(msg);
+});
+
