@@ -317,12 +317,155 @@ function getSlideHTML(slideNumber, totalSlides, title, content) {
     `;
 }
 
+// Load CTA logo as base64 at startup
+let CTA_LOGO_BASE64 = '';
+const logoPath = path.join(__dirname, '../../public/assets/logo_ia.png');
+if (fs.existsSync(logoPath)) {
+    CTA_LOGO_BASE64 = fs.readFileSync(logoPath).toString('base64');
+    console.log('✅ CTA logo loaded');
+} else {
+    console.warn('⚠️ CTA logo not found at', logoPath);
+}
+
+/**
+ * Generate HTML for the CTA (Call To Action) slide
+ * Always the last slide in every carousel
+ */
+function getCtaSlideHTML(totalSlides) {
+    const logoImg = CTA_LOGO_BASE64
+        ? `<img src="data:image/png;base64,${CTA_LOGO_BASE64}" style="width: 200px; height: auto; margin-bottom: 60px;" />`
+        : '';
+
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                * {
+                    margin: 0;
+                    padding: 0;
+                    box-sizing: border-box;
+                }
+                body {
+                    width: ${SLIDE_WIDTH}px;
+                    height: ${SLIDE_HEIGHT}px;
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    background: linear-gradient(165deg, #1a1a2e 0%, #0f3460 100%);
+                    color: white;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    text-align: center;
+                    padding: 90px;
+                    position: relative;
+                    overflow: hidden;
+                }
+                .logo {
+                    margin-bottom: 60px;
+                }
+                .cta-main {
+                    font-size: 56px;
+                    font-weight: 700;
+                    line-height: 1.25;
+                    margin-bottom: 70px;
+                    max-width: 90%;
+                }
+                .cta-highlight {
+                    background: linear-gradient(90deg, #e94560, #f97316);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                }
+                .cta-action {
+                    font-size: 48px;
+                    font-weight: 600;
+                    color: rgba(255, 255, 255, 0.95);
+                    margin-bottom: 20px;
+                }
+                .cta-keyword {
+                    display: inline-block;
+                    font-size: 52px;
+                    font-weight: 800;
+                    background: linear-gradient(90deg, #e94560, #f97316);
+                    padding: 12px 40px;
+                    border-radius: 16px;
+                    margin-top: 20px;
+                    color: white;
+                }
+                .divider {
+                    width: 140px;
+                    height: 6px;
+                    background: linear-gradient(90deg, #e94560, #f97316);
+                    border-radius: 3px;
+                    margin-bottom: 70px;
+                }
+                .progress-container {
+                    position: absolute;
+                    bottom: 90px;
+                    left: 90px;
+                    right: 90px;
+                }
+                .progress-bar {
+                    width: 100%;
+                    height: 8px;
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 4px;
+                    overflow: hidden;
+                }
+                .progress-fill {
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(90deg, #e94560, #f97316);
+                    border-radius: 4px;
+                }
+                .slide-indicator {
+                    position: absolute;
+                    bottom: 110px;
+                    right: 90px;
+                    font-size: 26px;
+                    color: rgba(255, 255, 255, 0.6);
+                    font-weight: 500;
+                }
+                /* Corner decorations */
+                .corner-tl, .corner-br {
+                    position: absolute;
+                    width: 100px;
+                    height: 100px;
+                    border-radius: 16px;
+                    border: 3px solid rgba(233, 69, 96, 0.25);
+                }
+                .corner-tl { top: 50px; left: 50px; }
+                .corner-br { bottom: 140px; right: 50px; }
+            </style>
+        </head>
+        <body>
+            <div class="corner-tl"></div>
+            <div class="corner-br"></div>
+            <div class="logo">${logoImg}</div>
+            <p class="cta-main">
+                Aprende a crear y vender soluciones con <span class="cta-highlight">IA y Vibe Coding</span>
+            </p>
+            <div class="divider"></div>
+            <p class="cta-action">Comentá</p>
+            <span class="cta-keyword">"quiero"</span>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+            </div>
+            <div class="slide-indicator">${totalSlides}/${totalSlides}</div>
+        </body>
+        </html>
+    `;
+}
+
 /**
  * Render HTML slides to images using Puppeteer
  */
 async function renderSlidesToImages(concepts, videoId, videoTitle, onProgress) {
     const slides = [];
-    const total = concepts.length;
+    const total = concepts.length + 1; // +1 for CTA slide
     const timestamp = Date.now();
 
     let browser = null;
@@ -419,6 +562,38 @@ async function renderSlidesToImages(concepts, videoId, videoTitle, onProgress) {
                     success: false
                 });
             }
+        }
+
+        // === Always append CTA slide as the last slide ===
+        try {
+            console.log(`🖼️ Generating CTA slide ${total}/${total}...`);
+            if (onProgress) onProgress(total, total);
+
+            const ctaFilename = `slide_${String(total).padStart(2, '0')}_cta_${timestamp}.png`;
+            const ctaHtml = getCtaSlideHTML(total);
+
+            await page.setContent(ctaHtml, { waitUntil: 'domcontentloaded' });
+            await new Promise(r => setTimeout(r, 200));
+
+            const ctaOutputPath = path.join(OUTPUT_DIR, ctaFilename);
+            await page.screenshot({
+                path: ctaOutputPath,
+                type: 'png',
+                clip: { x: 0, y: 0, width: SLIDE_WIDTH, height: SLIDE_HEIGHT }
+            });
+
+            slides.push({
+                slideNumber: total,
+                type: 'cta',
+                title: 'CTA',
+                filename: ctaFilename,
+                url: `/generated/${ctaFilename}`,
+                success: true
+            });
+
+            console.log(`✅ CTA slide rendered: ${ctaFilename}`);
+        } catch (error) {
+            console.error('❌ Failed to generate CTA slide:', error.message);
         }
 
     } finally {
