@@ -79,6 +79,7 @@ REGLAS ESTRICTAS:
 - ✅ Si el video da un método o framework → DESCRIBIRLO con pasos claros
 - ✅ Escribe en el MISMO idioma del transcript
 - ✅ Cada slide debe aportar VALOR REAL al lector
+- ✅ Usa la ORTOGRAFÍA CORRECTA de términos técnicos: "JSON" (no "Jason"), "API" (no "Api"), "SQL" (no "Sequel"), "HTML", "CSS", "JavaScript", etc.
 
 La primera slide debe resumir la PROMESA del video (qué va a aprender el lector).
 La última slide debe cerrar con una conclusión memorable.
@@ -92,12 +93,41 @@ Responde ÚNICAMENTE con JSON válido (sin markdown, sin backticks):
     try {
         const responseText = await generateWithFallback(genAI, prompt);
         const parsed = parseAIResponse(responseText);
+        // Sanitize tech terms in all concepts
+        if (parsed.concepts) {
+            parsed.concepts = parsed.concepts.map(c => ({
+                ...c,
+                title: sanitizeTechTerms(c.title),
+                content: sanitizeTechTerms(c.content)
+            }));
+        }
         console.log(`✅ AI processed ${parsed.concepts.length} concepts`);
         return parsed;
     } catch (error) {
         console.error('❌ AI processing error:', error.message);
         throw error;
     }
+}
+
+/**
+ * Sanitize common LLM phonetic errors in tech terminology
+ * LLMs sometimes write phonetic versions of tech terms (e.g. "Jason" for "JSON")
+ */
+function sanitizeTechTerms(text) {
+    if (!text) return text;
+    return text
+        .replace(/\bJason\b/g, 'JSON')
+        .replace(/\bjason\b/g, 'JSON')
+        .replace(/\bJASON\b/g, 'JSON')
+        .replace(/\bjayson\b/gi, 'JSON')
+        .replace(/\bApi\b/g, 'API')
+        .replace(/\bHtml\b/g, 'HTML')
+        .replace(/\bCss\b/g, 'CSS')
+        .replace(/\bSql\b/g, 'SQL')
+        .replace(/\bUrl\b/g, 'URL')
+        .replace(/\bIa\b/g, 'IA')
+        .replace(/\bJavascript\b/g, 'JavaScript')
+        .replace(/\bTypescript\b/g, 'TypeScript');
 }
 
 /**

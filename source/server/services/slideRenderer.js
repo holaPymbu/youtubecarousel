@@ -133,13 +133,13 @@ async function generateCoverFromThumbnail(videoId, title, outputFilename) {
 
         // Limit to 3 lines max
         const displayLines = lines.slice(0, 3);
-        const lineHeight = 70;
-        const baseY = 1140 - ((displayLines.length - 1) * lineHeight / 2);
+        const lineHeight = 85;
+        const baseY = 1120 - ((displayLines.length - 1) * lineHeight / 2);
 
         const titleTexts = displayLines.map((line, i) =>
             `<text x="540" y="${baseY + i * lineHeight}" text-anchor="middle" 
                    style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
-                          font-size: 56px; font-weight: 800; fill: white;
+                          font-size: 72px; font-weight: 800; fill: white;
                           text-shadow: 0 4px 30px rgba(0,0,0,0.8);">${line}</text>`
         ).join('\n');
 
