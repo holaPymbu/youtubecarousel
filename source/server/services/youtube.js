@@ -1,60 +1,9 @@
-const { Innertube } = require('youtubei.js');
-const { YoutubeTranscript } = require('youtube-transcript');
-
-let innertube = null;
-
 /**
- * Initialize InnerTube client
+ * YouTube Service
+ * Extracts video ID and gets transcript using Apify
  */
-async function getClient() {
-    if (!innertube) {
-        innertube = await Innertube.create({
-            lang: 'en',
-            location: 'US',
-            retrieve_player: false
-        });
-    }
-    return innertube;
-}
 
-/**
- * Get transcript using youtube-transcript package (works better on servers)
- */
-async function getTranscriptAlternative(videoId) {
-    console.log(`🔄 Trying youtube-transcript package for video ${videoId}...`);
-
-    const transcriptItems = await YoutubeTranscript.fetchTranscript(videoId);
-
-    if (!transcriptItems || transcriptItems.length === 0) {
-        throw new Error('No transcript found with alternative method');
-    }
-
-    const fullText = transcriptItems
-        .map(item => item.text)
-        .join(' ')
-        .replace(/\\n/g, ' ')
-        .replace(/\s+/g, ' ')
-        .replace(/\[.*?\]/g, '') // Remove [Music] etc
-        .trim();
-
-    if (fullText.length < 50) {
-        throw new Error('Transcript too short');
-    }
-
-    console.log(`✅ Alternative transcript retrieved (${fullText.length} chars)`);
-
-    return {
-        text: fullText,
-        segments: transcriptItems.map(item => ({
-            text: item.text,
-            offset: item.offset || 0,
-            duration: item.duration || 0
-        })),
-        videoTitle: 'YouTube Video',
-        duration: 0,
-        source: 'youtube-transcript'
-    };
-}
+const apifyService = require('./apifyTranscriptionService');
 
 /**
  * Extract video ID from various YouTube URL formats
@@ -78,113 +27,15 @@ function extractVideoId(url) {
 }
 
 /**
- * Get transcript from a YouTube video using InnerTube API
+ * Get transcript from a YouTube video using Apify
  */
 async function getTranscript(videoId) {
-    try {
-        const yt = await getClient();
-        const info = await yt.getInfo(videoId);
-
-        // Get transcript
-        const transcriptInfo = await info.getTranscript();
-
-        if (!transcriptInfo || !transcriptInfo.transcript || !transcriptInfo.transcript.content) {
-            throw new Error('No transcript available');
-        }
-
-        const segments = transcriptInfo.transcript.content.body.initial_segments;
-
-        if (!segments || segments.length === 0) {
-            throw new Error('Transcript is empty');
-        }
-
-        // Extract text from segments
-        const fullText = segments
-            .map(segment => {
-                if (segment.snippet && segment.snippet.text) {
-                    return segment.snippet.text;
-                }
-                return '';
-            })
-            .filter(text => text.length > 0)
-            .join(' ')
-            .replace(/\s+/g, ' ')
-            .replace(/\[.*?\]/g, '') // Remove [Music] etc
-            .trim();
-
-        if (fullText.length < 50) {
-            throw new Error('Transcript too short');
-        }
-
-        console.log(`✅ Transcript retrieved for video ${videoId} (${fullText.length} chars)`);
-
-        return {
-            text: fullText,
-            segments: segments.map(s => ({
-                text: s.snippet?.text || '',
-                offset: s.start_ms || 0,
-                duration: s.end_ms ? s.end_ms - (s.start_ms || 0) : 0
-            })),
-            videoTitle: info.basic_info?.title || 'Unknown',
-            duration: info.basic_info?.duration || 0
-        };
-
-    } catch (error) {
-        console.error(`❌ InnerTube failed for ${videoId}:`, error.message);
-
-        // Fallback 1: Try youtube-transcript package (works better on servers)
-        try {
-            console.log('⚠️ InnerTube failed, trying youtube-transcript package...');
-            return await getTranscriptAlternative(videoId);
-        } catch (altError) {
-            console.error('❌ youtube-transcript also failed:', altError.message);
-
-            // Fallback 2: Try Apify (works from any server, handles anti-bot)
-            const apifyService = require('./apifyTranscriptionService');
-
-            if (apifyService.isAvailable()) {
-                try {
-                    console.log('⚠️ YouTube methods failed, trying Apify...');
-                    return await apifyService.getTranscript(videoId);
-                } catch (apifyError) {
-                    console.error('❌ Apify also failed:', apifyError.message);
-
-                    // Fallback 3: Try AssemblyAI (download audio + transcribe)
-                    const transcriptionService = require('./transcriptionService');
-
-                    if (transcriptionService.isAvailable()) {
-                        try {
-                            console.log('⚠️ All other methods failed, using AssemblyAI fallback...');
-                            return await transcriptionService.transcribeVideo(videoId);
-                        } catch (fallbackError) {
-                            console.error('❌ AssemblyAI fallback also failed:', fallbackError.message);
-                            throw new Error(`Transcription failed. InnerTube: ${error.message}. youtube-transcript: ${altError.message}. Apify: ${apifyError.message}. AssemblyAI: ${fallbackError.message}`);
-                        }
-                    } else {
-                        throw new Error(`Transcription failed. InnerTube: ${error.message}. youtube-transcript: ${altError.message}. Apify: ${apifyError.message}. AssemblyAI not configured.`);
-                    }
-                }
-            } else {
-                // No Apify, try AssemblyAI directly
-                const transcriptionService = require('./transcriptionService');
-
-                if (transcriptionService.isAvailable()) {
-                    try {
-                        console.log('⚠️ YouTube methods failed, using AssemblyAI fallback...');
-                        return await transcriptionService.transcribeVideo(videoId);
-                    } catch (fallbackError) {
-                        console.error('❌ AssemblyAI fallback also failed:', fallbackError.message);
-                        throw new Error(`Transcription failed. InnerTube: ${error.message}. youtube-transcript: ${altError.message}. AssemblyAI: ${fallbackError.message}`);
-                    }
-                } else {
-                    throw new Error(
-                        `Failed to get transcript. InnerTube: ${error.message}. youtube-transcript: ${altError.message}. ` +
-                        'Configure APIFY_API_KEY or ASSEMBLYAI_API_KEY for additional fallback options.'
-                    );
-                }
-            }
-        }
+    if (!apifyService.isAvailable()) {
+        throw new Error('APIFY_API_KEY is required. Configure it in your .env file.');
     }
+
+    console.log(`🎬 Getting transcript for video ${videoId} via Apify...`);
+    return await apifyService.getTranscript(videoId);
 }
 
 /**

@@ -29,7 +29,7 @@ router.get('/demo', async (req, res) => {
     };
 
     const concepts = await conceptExtractor.extractConcepts(sampleTranscript, 7);
-    const copy = copyGenerator.generateCopy(concepts, sampleTranscript);
+    const copy = await copyGenerator.generateCopy(concepts, sampleTranscript);
 
     res.json({
         success: true,
@@ -101,7 +101,7 @@ router.post('/process', async (req, res) => {
         const concepts = await conceptExtractor.extractConcepts(transcript, slideCount);
 
         // Step 3: Generate Instagram copy
-        const copy = copyGenerator.generateCopy(concepts, transcript);
+        const copy = await copyGenerator.generateCopy(concepts, transcript);
 
         res.json({
             success: true,
@@ -128,7 +128,7 @@ router.post('/process-text', async (req, res) => {
 
         const transcript = { text: text.trim() };
         const concepts = await conceptExtractor.extractConcepts(transcript, slideCount);
-        const copy = copyGenerator.generateCopy(concepts, transcript);
+        const copy = await copyGenerator.generateCopy(concepts, transcript);
 
         res.json({
             success: true,

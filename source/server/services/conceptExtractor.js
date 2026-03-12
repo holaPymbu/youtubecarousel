@@ -26,61 +26,120 @@ function splitIntoSentences(text) {
 }
 
 /**
- * Calculate importance score for a sentence
+ * Calculate importance score for a sentence (bilingual ES/EN)
  */
 function scoreSentence(sentence, allText) {
     let score = 0;
+    const lowerSentence = sentence.toLowerCase();
 
-    // Length bonus (prefer medium-length sentences)
+    // Length bonus (prefer medium-length sentences with real content)
     const wordCount = sentence.split(/\s+/).length;
-    if (wordCount >= 8 && wordCount <= 25) score += 2;
+    if (wordCount >= 10 && wordCount <= 30) score += 3;
+    else if (wordCount >= 6 && wordCount <= 40) score += 1;
+    else if (wordCount < 5) score -= 2; // Penalize very short fragments
 
-    // Key phrase indicators
+    // Bilingual key phrase indicators (ES + EN)
     const keyPhrases = [
+        // Spanish
+        'importante', 'clave', 'principal', 'esencial', 'fundamental',
+        'recuerda', 'consejo', 'secreto', 'estrategia', 'método',
+        'primero', 'segundo', 'tercero', 'finalmente', 'conclusión',
+        'mejor', 'debes', 'necesitas', 'significa', 'resultado',
+        'ejemplo', 'problema', 'solución', 'ventaja', 'beneficio',
+        'porque', 'entonces', 'básicamente', 'realmente',
+        // English
         'important', 'key', 'main', 'essential', 'critical',
-        'remember', 'note', 'tip', 'secret', 'strategy',
+        'remember', 'tip', 'secret', 'strategy', 'method',
         'first', 'second', 'third', 'finally', 'conclusion',
-        'best', 'top', 'must', 'should', 'need',
-        'success', 'growth', 'improve', 'learn', 'discover'
+        'best', 'must', 'should', 'need', 'means', 'result',
+        'example', 'problem', 'solution', 'advantage', 'benefit'
     ];
 
-    const lowerSentence = sentence.toLowerCase();
     keyPhrases.forEach(phrase => {
-        if (lowerSentence.includes(phrase)) score += 1;
+        if (lowerSentence.includes(phrase)) score += 1.5;
     });
 
-    // Action words bonus
-    const actionWords = ['do', 'make', 'create', 'build', 'start', 'begin', 'try', 'use'];
-    actionWords.forEach(word => {
-        if (lowerSentence.includes(word)) score += 0.5;
+    // Numbers/statistics bonus (strong signal of concrete content)
+    if (/\d+\s*%/.test(sentence)) score += 3;
+    if (/\d+/.test(sentence)) score += 1;
+
+    // Penalize filler phrases and speech artifacts
+    const fillerPhrases = [
+        'bueno', 'o sea', 'digamos', 'este', 'ehh', 'umm',
+        'you know', 'like', 'basically', 'right',
+        'van a', 'vamos a ver', 'les voy a', 'aquí ustedes',
+        'suscríbanse', 'dale like', 'compartan', 'subscribe'
+    ];
+    fillerPhrases.forEach(filler => {
+        if (lowerSentence.includes(filler)) score -= 2;
     });
 
-    // Numbers/statistics bonus
-    if (/\d+%?/.test(sentence)) score += 1;
+    // Penalize questions that are just rhetorical/engagement
+    if (sentence.endsWith('?') && wordCount < 8) score -= 1;
+
+    // Bonus for sentences that explain something (contain cause-effect)
+    const explanatoryPhrases = [
+        'porque', 'por eso', 'esto significa', 'esto permite',
+        'la razón', 'el motivo', 'la diferencia', 'en lugar de',
+        'because', 'that means', 'this allows', 'the reason',
+        'instead of', 'the difference'
+    ];
+    explanatoryPhrases.forEach(phrase => {
+        if (lowerSentence.includes(phrase)) score += 2;
+    });
 
     return score;
 }
 
 /**
- * Generate a catchy title from concept text (heuristic)
+ * Generate a meaningful title from a sentence (not just first N words)
+ * Tries to extract the core idea as a short phrase
  */
 function generateTitle(text, index, total) {
-    const words = text.split(/\s+/).slice(0, 6);
-    let title = words.join(' ');
+    const lowerText = text.toLowerCase();
 
-    // Clean up and capitalize
-    title = title.replace(/[.!?,;:]$/, '');
+    // Try to extract a meaningful noun phrase or key concept
+    // Look for patterns like "X es Y", "la clave es", "el método de", etc.
+    const patterns = [
+        /(?:la |el |lo )?(clave|secreto|truco|método|problema|solución|ventaja|error|regla|principio|concepto|idea|punto)\s+(?:es|de|para)\s+(.{5,30})/i,
+        /(?:the )?(key|secret|trick|method|problem|solution|advantage|error|rule|principle|concept|idea|point)\s+(?:is|of|for|to)\s+(.{5,30})/i,
+        /(\d+\s*%?\s+\w+.{3,25})/,
+    ];
+
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) {
+            let title = match[0].substring(0, 35).replace(/[.!?,;:]$/, '').trim();
+            title = title.charAt(0).toUpperCase() + title.slice(1);
+            return title;
+        }
+    }
+
+    // Fallback: Take the most meaningful words, skip filler
+    const skipWords = new Set([
+        'y', 'o', 'el', 'la', 'los', 'las', 'un', 'una', 'de', 'del', 'en', 'que', 'es',
+        'no', 'se', 'lo', 'por', 'con', 'para', 'como', 'pero', 'más', 'este', 'esta',
+        'also', 'the', 'a', 'an', 'is', 'in', 'to', 'of', 'and', 'or', 'for', 'that',
+        'muy', 'entonces', 'bueno', 'pues', 'ahora', 'eso', 'esto', 'aquí', 'así',
+        'van', 'vamos', 'ustedes', 'nosotros', 'les', 'me', 'te', 'su', 'mi'
+    ]);
+
+    const meaningfulWords = text.split(/\s+/)
+        .filter(w => !skipWords.has(w.toLowerCase()) && w.length > 2)
+        .slice(0, 5);
+
+    let title = meaningfulWords.join(' ').replace(/[.!?,;:]$/, '').trim();
+    if (title.length < 5) {
+        title = text.split(/\s+/).slice(0, 5).join(' ').replace(/[.!?,;:]$/, '').trim();
+    }
     title = title.charAt(0).toUpperCase() + title.slice(1);
 
-    // Add emoji based on position
-    const emojis = ['💡', '🎯', '✨', '🚀', '💪', '🔥', '⭐', '📌', '🎨', '💎'];
-    const emoji = emojis[index % emojis.length];
-
-    return `${emoji} ${title}`;
+    return title;
 }
 
 /**
  * Fallback heuristic extraction (when AI is unavailable)
+ * Divides transcript into segments and extracts the best content from each
  */
 function extractConceptsHeuristic(transcript, slideCount = 7) {
     const text = cleanText(transcript.text);
@@ -94,52 +153,65 @@ function extractConceptsHeuristic(transcript, slideCount = 7) {
     const scoredSentences = sentences.map((sentence, idx) => ({
         text: sentence,
         score: scoreSentence(sentence, text),
-        position: idx / sentences.length
+        position: idx / sentences.length,
+        index: idx
     }));
 
-    // Sort by score and select top concepts
-    const sortedSentences = [...scoredSentences]
-        .sort((a, b) => b.score - a.score);
-
-    // Select sentences distributed throughout the video
-    const selectedCount = Math.min(slideCount, Math.ceil(sentences.length / 3));
+    // Divide transcript into equal segments (one per slide)
+    const actualSlideCount = Math.min(slideCount, Math.max(3, Math.ceil(sentences.length / 4)));
+    const segmentSize = Math.ceil(sentences.length / actualSlideCount);
     const selected = [];
-    const usedPositions = new Set();
 
-    for (const sentence of sortedSentences) {
-        if (selected.length >= selectedCount) break;
+    for (let seg = 0; seg < actualSlideCount; seg++) {
+        const segStart = seg * segmentSize;
+        const segEnd = Math.min((seg + 1) * segmentSize, sentences.length);
 
-        const positionKey = Math.floor(sentence.position * 10);
-        if (!usedPositions.has(positionKey)) {
-            selected.push(sentence);
-            usedPositions.add(positionKey);
+        // Get sentences in this segment
+        const segmentSentences = scoredSentences.slice(segStart, segEnd);
+
+        if (segmentSentences.length === 0) continue;
+
+        // Pick the best-scored sentence from this segment
+        const best = segmentSentences.reduce((a, b) => a.score > b.score ? a : b);
+
+        // Try to build richer content by adding context from neighbor sentences
+        let content = best.text;
+        if (content.length < 80 && best.index + 1 < sentences.length) {
+            const next = sentences[best.index + 1];
+            if (next && (content + ' ' + next).length <= 220) {
+                content = content + ' ' + next;
+            }
         }
-    }
 
-    // Sort selected by original position
-    selected.sort((a, b) => a.position - b.position);
+        // Trim to reasonable length
+        if (content.length > 220) {
+            content = content.substring(0, 217) + '...';
+        }
+
+        selected.push({
+            text: best.text,
+            content: content,
+            score: best.score,
+            position: best.position
+        });
+    }
 
     // Create slide concepts
     const concepts = selected.map((item, index) => {
-        let slideText = item.text;
-        if (slideText.length > 120) {
-            slideText = slideText.substring(0, 117) + '...';
-        }
-
         return {
             slideNumber: index + 1,
             title: generateTitle(item.text, index, selected.length),
-            content: slideText,
+            content: item.content,
             position: item.position,
             isIntro: index === 0,
             isOutro: index === selected.length - 1
         };
     });
 
-    // Enhance first and last slides
+    // Mark first and last slides
     if (concepts.length > 0) {
-        concepts[0].title = '🎬 ' + concepts[0].title.replace(/^[^\s]+\s/, '');
-        concepts[concepts.length - 1].title = '🎯 Conclusión Clave';
+        concepts[0].title = 'Ideas Clave del Video';
+        concepts[concepts.length - 1].title = 'Conclusión';
     }
 
     return concepts;

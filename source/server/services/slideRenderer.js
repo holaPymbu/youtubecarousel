@@ -10,6 +10,7 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { generateCoverTitle } = require('./aiProcessor');
 
 // Ensure output directory exists
 const OUTPUT_DIR = path.join(__dirname, '../../public/generated');
@@ -115,7 +116,7 @@ async function generateCoverFromThumbnail(videoId, title, outputFilename) {
             .trim();
 
         // Split long titles into multiple lines
-        const maxCharsPerLine = 25;
+        const maxCharsPerLine = 30;
         const words = cleanTitle.split(' ');
         const lines = [];
         let currentLine = '';
@@ -132,13 +133,13 @@ async function generateCoverFromThumbnail(videoId, title, outputFilename) {
 
         // Limit to 3 lines max
         const displayLines = lines.slice(0, 3);
-        const lineHeight = 80;
-        const baseY = 1150 - ((displayLines.length - 1) * lineHeight / 2);
+        const lineHeight = 70;
+        const baseY = 1140 - ((displayLines.length - 1) * lineHeight / 2);
 
         const titleTexts = displayLines.map((line, i) =>
             `<text x="540" y="${baseY + i * lineHeight}" text-anchor="middle" 
                    style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
-                          font-size: 68px; font-weight: 800; fill: white;
+                          font-size: 56px; font-weight: 800; fill: white;
                           text-shadow: 0 4px 30px rgba(0,0,0,0.8);">${line}</text>`
         ).join('\n');
 
@@ -367,7 +368,15 @@ async function renderSlidesToImages(concepts, videoId, videoTitle, onProgress) {
                 if (isCover && videoId && videoId !== 'manual' && videoId !== 'demo') {
                     // Generate cover from YouTube thumbnail (with creator's face)
                     filename = `slide_01_cover_${timestamp}.png`;
-                    const coverTitle = concept.title || videoTitle;
+                    // Use AI to shorten the video title for the cover
+                    let coverTitle = videoTitle || concept.title || 'Instagram Carousel';
+                    try {
+                        coverTitle = await generateCoverTitle(coverTitle);
+                    } catch (e) {
+                        console.log('⚠️ Could not shorten cover title, using original');
+                        // Fallback: just take first 5 words
+                        coverTitle = coverTitle.split(/[\s:|\.\-–—]+/).filter(w => w.length > 1).slice(0, 5).join(' ');
+                    }
                     url = await generateCoverFromThumbnail(videoId, coverTitle, filename);
                 } else {
                     // Generate content slide with Puppeteer

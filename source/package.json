@@ -10,16 +10,11 @@
   "dependencies": {
     "@google/genai": "^1.38.0",
     "@google/generative-ai": "^0.24.1",
-    "assemblyai": "^4.22.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^4.18.2",
-    "html2canvas": "^1.4.1",
     "puppeteer": "^24.36.1",
-    "sharp": "^0.34.5",
-    "youtube-dl-exec": "^3.0.30",
-    "youtube-transcript": "^1.2.1",
-    "youtubei.js": "^12.2.0"
+    "sharp": "^0.34.5"
   },
   "keywords": [
     "youtube",
