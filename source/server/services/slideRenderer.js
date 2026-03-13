@@ -333,7 +333,7 @@ if (fs.existsSync(logoPath)) {
  */
 function getCtaSlideHTML(totalSlides) {
     const logoImg = CTA_LOGO_BASE64
-        ? `<img src="data:image/png;base64,${CTA_LOGO_BASE64}" style="width: 200px; height: auto; margin-bottom: 60px;" />`
+        ? `<img src="data:image/png;base64,${CTA_LOGO_BASE64}" style="width: 400px; height: auto; margin-bottom: 60px;" />`
         : '';
 
     return `
