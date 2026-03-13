@@ -598,7 +598,7 @@ async function handleGenerateImages() {
         showLoadingOverlay();
 
         // Simulate progress updates (since backend doesn't stream progress)
-        const totalSlides = state.concepts.length;
+        const totalSlides = state.concepts.length + 1; // +1 for CTA slide
         let simulatedProgress = 0;
         const progressInterval = setInterval(() => {
             simulatedProgress++;

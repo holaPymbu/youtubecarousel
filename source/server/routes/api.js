@@ -183,7 +183,7 @@ router.post('/generate-images', async (req, res) => {
                 ? imageGenerator.getThumbnailUrl(videoId)
                 : null,
             message: `Generated ${successCount} images${failedCount > 0 ? `, ${failedCount} failed` : ''}`,
-            stats: { total: concepts.length, success: successCount, failed: failedCount }
+            stats: { total: generatedSlides.length, success: successCount, failed: failedCount }
         });
     } catch (error) {
         console.error('Error generating images:', error);
